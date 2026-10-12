@@ -1,0 +1,14 @@
+{
+  "domain": "foxess_openapi",
+  "name": "FoxESS Cloud Open API",
+  "codeowners": [
+    "@duquedaniel"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/duquedaniel/ha-foxess-openapi",
+  "integration_type": "device",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/duquedaniel/ha-foxess-openapi/issues",
+  "requirements": [],
+  "version": "0.1.1"
+}

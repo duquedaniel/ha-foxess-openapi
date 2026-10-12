@@ -1,0 +1,171 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "FoxESS Cloud Open API",
+        "description": "Generate an API key at foxesscloud.com > User Profile > API Management.",
+        "data": {
+          "api_key": "API key"
+        }
+      },
+      "device": {
+        "title": "Select inverter",
+        "data": {
+          "device_sn": "Inverter"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "API key rejected by FoxESS Cloud.",
+      "cannot_connect": "Could not reach FoxESS Cloud (or rate limited).",
+      "no_devices": "No inverters found on this account."
+    },
+    "abort": {
+      "already_configured": "This inverter is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Polling",
+        "description": "FoxESS allows 1440 API calls per inverter per day. Real-time = 1 call per poll; settings = 4 calls per poll.",
+        "data": {
+          "realtime_interval": "Real-time poll interval (minutes)",
+          "settings_interval": "Settings/scheduler poll interval (minutes)"
+        }
+      }
+    }
+  },
+  "services": {
+    "force_charge": {
+      "name": "Force charge window",
+      "description": "Writes a ForceCharge window and enables the scheduler. By default keeps the other enabled groups (e.g. the SelfUse base) and replaces only existing force-charge groups.",
+      "fields": {
+        "device_sn": {
+          "name": "Inverter SN",
+          "description": "Optional, defaults to the first configured inverter."
+        },
+        "start_time": {
+          "name": "Start",
+          "description": "Window start (local inverter time)."
+        },
+        "end_time": {
+          "name": "End",
+          "description": "Window end. Windows crossing midnight are split in two."
+        },
+        "target_soc": {
+          "name": "Target SoC",
+          "description": "fdSoc: charging stops at this SoC."
+        },
+        "power": {
+          "name": "Max charge power",
+          "description": "fdPwr in W."
+        },
+        "min_soc_on_grid": {
+          "name": "Min SoC on grid",
+          "description": "Defaults to the current on-grid min SoC."
+        },
+        "max_soc": {
+          "name": "Max SoC",
+          "description": "maxSoc for the group."
+        },
+        "mode": {
+          "name": "Mode",
+          "description": "ForceCharge or ForceCharge(BAT), as reported by the inverter."
+        },
+        "replace_all": {
+          "name": "Replace all groups",
+          "description": "If on, discards all other groups and writes only the charge window."
+        }
+      }
+    },
+    "set_schedule": {
+      "name": "Set schedule (raw)",
+      "description": "Writes scheduler groups (Scheduler V1 format) and optionally enables the scheduler.",
+      "fields": {
+        "device_sn": {
+          "name": "Inverter SN",
+          "description": "Optional."
+        },
+        "groups": {
+          "name": "Groups",
+          "description": "List of groups as in /op/v1/device/scheduler/enable."
+        },
+        "enable_scheduler": {
+          "name": "Enable scheduler",
+          "description": "Turn the master switch on after writing."
+        }
+      }
+    },
+    "disable_scheduler": {
+      "name": "Disable scheduler",
+      "description": "Turns the scheduler master switch off.",
+      "fields": {
+        "device_sn": {
+          "name": "Inverter SN",
+          "description": "Optional."
+        }
+      }
+    },
+    "set_min_soc": {
+      "name": "Set min SoC",
+      "description": "Sets minSoc and minSocOnGrid (10-100).",
+      "fields": {
+        "device_sn": {
+          "name": "Inverter SN",
+          "description": "Optional."
+        },
+        "min_soc": {
+          "name": "Min SoC",
+          "description": "System minimum SoC."
+        },
+        "min_soc_on_grid": {
+          "name": "Min SoC on grid",
+          "description": "Discharge cut-off when grid-connected."
+        }
+      }
+    },
+    "set_setting": {
+      "name": "Set device setting",
+      "description": "Generic /op/v0/device/setting/set call.",
+      "fields": {
+        "device_sn": {
+          "name": "Inverter SN",
+          "description": "Optional."
+        },
+        "key": {
+          "name": "Key",
+          "description": "Setting key."
+        },
+        "value": {
+          "name": "Value",
+          "description": "Value as string."
+        }
+      }
+    },
+    "get_setting": {
+      "name": "Get device setting",
+      "description": "Returns value, unit and range of a setting.",
+      "fields": {
+        "device_sn": {
+          "name": "Inverter SN",
+          "description": "Optional."
+        },
+        "key": {
+          "name": "Key",
+          "description": "Setting key."
+        }
+      }
+    },
+    "get_schedule": {
+      "name": "Get schedule",
+      "description": "Returns the scheduler groups and their allowed ranges.",
+      "fields": {
+        "device_sn": {
+          "name": "Inverter SN",
+          "description": "Optional."
+        }
+      }
+    }
+  }
+}
