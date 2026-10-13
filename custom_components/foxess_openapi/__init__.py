@@ -30,7 +30,7 @@ from .const import (
     WORK_MODES,
 )
 from .coordinator import FoxESSRealtimeCoordinator, FoxESSSettingsCoordinator
-from .schedule import find_overlaps, merge_charge_groups
+from .schedule import end_min, find_overlaps, merge_charge_groups, start_min
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -208,6 +208,7 @@ def _register_services(hass: HomeAssistant) -> None:
             for sh, sm, eh, em in _split_window(call.data["start_time"], call.data["end_time"])
         ]
         kept: list[dict[str, Any]] = []
+        old_fc_spans: list[tuple[int, int]] = []
         max_groups = 8
         if not call.data["replace_all"]:
             # Keep every enabled, non-force-charge group (e.g. the 00:00-23:59 SelfUse base),
@@ -221,9 +222,14 @@ def _register_services(hass: HomeAssistant) -> None:
                 and g.get("workMode") in WORK_MODES
                 and g.get("workMode") not in FORCE_CHARGE_MODES
             ]
+            old_fc_spans = [
+                (start_min(g), end_min(g))
+                for g in current.get("groups", [])
+                if g.get("enable") == 1 and g.get("workMode") in FORCE_CHARGE_MODES
+            ]
         # Trim the kept groups around the charge window: the inverter does not run
         # overlapping periods (the FoxESS app reports them as overlapping).
-        groups = merge_charge_groups(kept, charge_groups)
+        groups = merge_charge_groups(kept, charge_groups, old_fc_spans)
         _check_no_overlap(groups)
         if len(groups) > max_groups:
             raise HomeAssistantError(f"Schedule would need {len(groups)} groups; inverter allows {max_groups}")

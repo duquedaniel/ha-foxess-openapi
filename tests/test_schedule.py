@@ -35,3 +35,14 @@ def test_find_overlaps():
     assert s.find_overlaps([g(0,0,5,59), g(6,0,7,59)]) == []
     assert s.find_overlaps([g(0,0,6,0), g(6,0,7,59)]) == [(0,1)]
     assert s.find_overlaps([g(0,0,23,59), g(6,0,7,59, enable=0)]) == []
+
+def test_moving_window_leaves_no_gap():
+    first = s.merge_charge_groups([g(0,0,23,59)], [g(6,0,7,59,"ForceCharge")])
+    kept = [x for x in first if x["workMode"] != "ForceCharge"]
+    old = [(s.start_min(x), s.end_min(x)) for x in first if x["workMode"] == "ForceCharge"]
+    second = s.merge_charge_groups(kept, [g(7,0,7,59,"ForceCharge")], old)
+    assert spans(second) == [("SelfUse","00:00","06:59"),("ForceCharge","07:00","07:59"),("SelfUse","08:00","23:59")]
+
+def test_rejoin_only_same_settings():
+    out = s.rejoin([g(0,0,5,59), g(8,0,23,59,"Feedin")], [(360, 479)])
+    assert spans(out) == [("SelfUse","00:00","05:59"),("Feedin","08:00","23:59")]

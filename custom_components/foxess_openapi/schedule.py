@@ -60,11 +60,43 @@ def subtract_windows(
     return result
 
 
+SETTING_KEYS = ("enable", "workMode", "minSocOnGrid", "fdSoc", "fdPwr", "maxSoc")
+
+
+def rejoin(kept: list[dict[str, Any]], fc_spans: list[tuple[int, int]]) -> list[dict[str, Any]]:
+    """Re-join kept groups that were split around a force-charge window.
+
+    Two groups with identical settings are merged when the gap between them is fully covered
+    by `fc_spans`, so moving or removing the window restores e.g. 00:00-23:59 SelfUse.
+    """
+    fc_minutes: set[int] = set()
+    for a, b in fc_spans:
+        fc_minutes.update(range(a, b + 1))
+    out: list[dict[str, Any]] = []
+    for g in sorted(kept, key=start_min):
+        if out:
+            prev = out[-1]
+            gap = range(end_min(prev) + 1, start_min(g))
+            same = all(prev.get(k, 1 if k == "enable" else None) == g.get(k, 1 if k == "enable" else None)
+                       for k in SETTING_KEYS)
+            if same and all(m in fc_minutes for m in gap):
+                out[-1] = _with_span(prev, start_min(prev), max(end_min(prev), end_min(g)))
+                continue
+        out.append(g)
+    return out
+
+
 def merge_charge_groups(
-    kept: list[dict[str, Any]], charge_groups: list[dict[str, Any]]
+    kept: list[dict[str, Any]],
+    charge_groups: list[dict[str, Any]],
+    old_fc_spans: list[tuple[int, int]] | None = None,
 ) -> list[dict[str, Any]]:
-    """Insert charge groups, trimming the kept groups around them; sorted by start time."""
+    """Insert charge groups, trimming the kept groups around them; sorted by start time.
+
+    `old_fc_spans` are the force-charge periods being replaced; kept groups split around them
+    are joined again first, so no gap is left where the old window was.
+    """
     windows = [(start_min(g), end_min(g)) for g in charge_groups]
-    merged = subtract_windows(kept, windows) + list(charge_groups)
+    merged = subtract_windows(rejoin(kept, old_fc_spans or []), windows) + list(charge_groups)
     merged.sort(key=start_min)
     return merged
