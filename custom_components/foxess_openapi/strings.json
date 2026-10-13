@@ -39,7 +39,7 @@
   "services": {
     "force_charge": {
       "name": "Force charge window",
-      "description": "Writes a ForceCharge window and enables the scheduler. By default keeps the other enabled groups (e.g. the SelfUse base) and replaces only existing force-charge groups.",
+      "description": "Writes a ForceCharge window and enables the scheduler. By default keeps the other enabled groups (e.g. the SelfUse base), trimming them around the window so no periods overlap, and replaces only existing force-charge groups.",
       "fields": {
         "device_sn": {
           "name": "Inverter SN",
@@ -81,7 +81,7 @@
     },
     "set_schedule": {
       "name": "Set schedule (raw)",
-      "description": "Writes scheduler groups (Scheduler V1 format) and optionally enables the scheduler.",
+      "description": "Writes scheduler groups (Scheduler V1 format) and optionally enables the scheduler. Overlapping periods are rejected.",
       "fields": {
         "device_sn": {
           "name": "Inverter SN",

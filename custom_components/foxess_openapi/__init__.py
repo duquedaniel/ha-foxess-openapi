@@ -30,6 +30,7 @@ from .const import (
     WORK_MODES,
 )
 from .coordinator import FoxESSRealtimeCoordinator, FoxESSSettingsCoordinator
+from .schedule import find_overlaps, merge_charge_groups
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -107,7 +108,21 @@ def _split_window(start: dtime, end: dtime) -> list[tuple[int, int, int, int]]:
     return out
 
 
+def _check_no_overlap(groups: list[dict[str, Any]]) -> None:
+    pairs = find_overlaps(groups)
+    if pairs:
+        def fmt(g: dict[str, Any]) -> str:
+            return (f"{g['workMode']} {g['startHour']:02d}:{g['startMinute']:02d}-"
+                    f"{g['endHour']:02d}:{g['endMinute']:02d}")
+        i, j = pairs[0]
+        raise HomeAssistantError(
+            f"Overlapping scheduler groups are not allowed: {fmt(groups[i])} and {fmt(groups[j])}"
+        )
+
+
 def _validate_group(g: dict[str, Any]) -> dict[str, Any]:
+    if (g["endHour"], g["endMinute"]) < (g["startHour"], g["startMinute"]):
+        raise HomeAssistantError("A group cannot end before it starts (split windows that cross midnight)")
     if g["workMode"] not in WORK_MODES:
         raise HomeAssistantError(f"workMode must be one of {WORK_MODES}")
     if g["fdSoc"] < g["minSocOnGrid"]:
@@ -170,6 +185,7 @@ def _register_services(hass: HomeAssistant) -> None:
     async def set_schedule(call: ServiceCall) -> None:
         d = _get(hass, call.data.get("device_sn"))
         groups = [_validate_group(dict(g)) for g in call.data["groups"]]
+        _check_no_overlap(groups)
         await _wrap(d.api.scheduler_set(d.sn, groups))
         if call.data["enable_scheduler"]:
             await _wrap(d.api.scheduler_flag_set(d.sn, True))
@@ -205,8 +221,10 @@ def _register_services(hass: HomeAssistant) -> None:
                 and g.get("workMode") in WORK_MODES
                 and g.get("workMode") not in FORCE_CHARGE_MODES
             ]
-        # Force-charge window(s) first, as in the inverter's own ordering.
-        groups = charge_groups + kept
+        # Trim the kept groups around the charge window: the inverter does not run
+        # overlapping periods (the FoxESS app reports them as overlapping).
+        groups = merge_charge_groups(kept, charge_groups)
+        _check_no_overlap(groups)
         if len(groups) > max_groups:
             raise HomeAssistantError(f"Schedule would need {len(groups)} groups; inverter allows {max_groups}")
         await _wrap(d.api.scheduler_set(d.sn, groups))

@@ -16,8 +16,10 @@ variables or scheduler options.
 - Switch: scheduler master switch.
 - Services:
   - `foxess_openapi.force_charge` – writes a ForceCharge window **and keeps the other enabled
-    groups** (e.g. a 00:00-23:59 SelfUse base). `replace_all: true` overwrites everything.
-  - `foxess_openapi.set_schedule` – raw scheduler groups (V1 format, overwrites).
+    groups** (e.g. a 00:00-23:59 SelfUse base), trimming them around the window so no periods
+    overlap. `replace_all: true` overwrites everything.
+  - `foxess_openapi.set_schedule` – raw scheduler groups (V1 format, overwrites). Overlapping
+    periods are rejected.
   - `foxess_openapi.disable_scheduler`, `set_min_soc`, `set_setting`,
     `get_setting` (returns data), `get_schedule` (returns data).
 
@@ -55,6 +57,11 @@ settings/scheduler every 30 min (4 × 48 = 192/day); change in the integration o
 ```
 
 ## Notes
+- Scheduler periods must not overlap. The FoxESS app refuses overlapping periods, and in
+  v0.1.1 a ForceCharge window written on top of a 00:00-23:59 SelfUse group did not run on a
+  real inverter.
+  Since v0.1.2 `force_charge` splits the other groups around the window (e.g. SelfUse
+  00:00-06:42, ForceCharge 06:43-07:59, SelfUse 08:00-23:59).
 - API host is `https://www.foxesscloud.com`.
 - Signature: the doc table uses `url\r\ntoken\r\ntimestamp`; the official Python sample uses literal
   backslashes. The client tries the sample's form first and switches automatically if rejected.
